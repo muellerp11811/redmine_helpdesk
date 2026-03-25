@@ -1,10 +1,14 @@
 module RedmineHelpdesk
   module MailerPatch
-    def self.included(base)
+    def self.included(base) # :nodoc:
       base.send(:include, InstanceMethods)
     end
 
     module InstanceMethods
+      # Extends the issue_edit method which is only
+      # be called on existing tickets. We will add the
+      # owner-email to the recipients only if no email-
+      # footer text is available.
       def helpdesk_issue_edit_to_owner(issue, journal, owner_email, cc_users = nil)
         redmine_headers 'Project' => issue.project.identifier,
                         'Issue-Id' => issue.id,
@@ -16,7 +20,7 @@ module RedmineHelpdesk
         references issue
 
         @author = journal.user
-
+        # process reply-separator
         begin
           f = CustomField.find_by_name('helpdesk-reply-separator')
           reply_separator = issue.project.custom_value_for(f).try(:value)
@@ -51,8 +55,9 @@ module RedmineHelpdesk
           subject: s
         )
       end
-    end
-  end
-end
+    end # module InstanceMethods
+  end # module MailerPatch
+end # module RedmineHelpdesk
 
+# Add module to Mailer class
 Mailer.send(:include, ::RedmineHelpdesk::MailerPatch)
